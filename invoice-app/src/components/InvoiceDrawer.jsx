@@ -83,7 +83,7 @@ const InvoiceDrawer = ({ invoice, onClose, clientName }) => {
     ty += 16;
     doc.setFontSize(10);
     doc.setTextColor(40, 40, 40);
-    doc.text("Servicios profesionales", M + 3, ty);
+    doc.text(invoice.concepto || "Servicios profesionales", M + 3, ty);
     doc.text("1", W - M - 62, ty, { align: "right" });
     doc.text(eur(base), W - M - 32, ty, { align: "right" });
     doc.text(eur(base), W - M - 3, ty, { align: "right" });

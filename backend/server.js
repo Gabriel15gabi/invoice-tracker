@@ -31,6 +31,7 @@ db.exec(`
     id       INTEGER PRIMARY KEY AUTOINCREMENT,
     clientId INTEGER NOT NULL,
     amount   REAL NOT NULL,
+    concepto TEXT DEFAULT '',
     status   TEXT NOT NULL DEFAULT 'Pendiente',
     date     TEXT NOT NULL
   );
@@ -41,6 +42,12 @@ db.exec(`
     password_hash TEXT NOT NULL
   );
 `);
+
+// Migración: añade la columna 'concepto' si la BD es de una versión anterior.
+const invoiceCols = db.prepare("PRAGMA table_info(invoices)").all();
+if (!invoiceCols.some((c) => c.name === "concepto")) {
+  db.exec("ALTER TABLE invoices ADD COLUMN concepto TEXT DEFAULT ''");
+}
 
 // Datos de ejemplo (solo la primera vez, si la BD está vacía)
 if (db.prepare("SELECT COUNT(*) AS n FROM clients").get().n === 0) {
@@ -141,16 +148,16 @@ app.get("/invoices", (req, res) => {
 });
 
 app.post("/invoices", (req, res) => {
-  const { clientId, amount, status, date } = req.body || {};
+  const { clientId, amount, concepto, status, date } = req.body || {};
   if (!clientId || amount == null || !date) {
     return res.status(400).json({ error: "Faltan datos de la factura" });
   }
 
   const info = db
     .prepare(
-      "INSERT INTO invoices (clientId, amount, status, date) VALUES (?, ?, ?, ?)"
+      "INSERT INTO invoices (clientId, amount, concepto, status, date) VALUES (?, ?, ?, ?, ?)"
     )
-    .run(Number(clientId), Number(amount), status || "Pendiente", date);
+    .run(Number(clientId), Number(amount), concepto || "", status || "Pendiente", date);
 
   res.json(db.prepare("SELECT * FROM invoices WHERE id = ?").get(info.lastInsertRowid));
 });
@@ -162,8 +169,15 @@ app.put("/invoices/:id", (req, res) => {
 
   const merged = { ...current, ...req.body };
   db.prepare(
-    "UPDATE invoices SET clientId = ?, amount = ?, status = ?, date = ? WHERE id = ?"
-  ).run(Number(merged.clientId), Number(merged.amount), merged.status, merged.date, id);
+    "UPDATE invoices SET clientId = ?, amount = ?, concepto = ?, status = ?, date = ? WHERE id = ?"
+  ).run(
+    Number(merged.clientId),
+    Number(merged.amount),
+    merged.concepto || "",
+    merged.status,
+    merged.date,
+    id
+  );
 
   // Mantenemos el contrato original: devolvemos la lista completa de facturas.
   res.json(db.prepare("SELECT * FROM invoices ORDER BY id").all());
@@ -194,6 +208,7 @@ app.get("/stats", (req, res) => {
   res.json({ totalPaid, totalPending, count, byStatus });
 });
 
-app.listen(3001, () => {
-  console.log("Servidor en http://localhost:3001");
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Servidor en http://localhost:${PORT}`);
 });

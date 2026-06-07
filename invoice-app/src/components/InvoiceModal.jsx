@@ -11,6 +11,7 @@ const InvoiceModal = ({
   const [clients, setClients] = useState([]);
   const [clientId, setClientId] = useState("");
   const [amount, setAmount] = useState("");
+  const [concepto, setConcepto] = useState("");
 
   // Cargar clientes desde backend
   useEffect(() => {
@@ -26,9 +27,11 @@ const InvoiceModal = ({
       if (editingInvoice) {
         setClientId(editingInvoice.clientId || "");
         setAmount(editingInvoice.amount || "");
+        setConcepto(editingInvoice.concepto || "");
       } else {
         setClientId("");
         setAmount("");
+        setConcepto("");
       }
     }
   }, [editingInvoice, isOpen]);
@@ -41,6 +44,7 @@ const InvoiceModal = ({
     const invoiceData = {
       clientId: Number(clientId),
       amount: Number(amount),
+      concepto: concepto.trim(),
       status: "Pendiente",
       date: new Date().toISOString().split("T")[0],
     };
@@ -80,6 +84,15 @@ const InvoiceModal = ({
               </option>
             ))}
           </select>
+
+          {/* CONCEPTO / MOTIVO */}
+          <input
+            value={concepto}
+            onChange={(e) => setConcepto(e.target.value)}
+            type="text"
+            placeholder="Concepto (ej. Diseño web, consultoría...)"
+            className="border p-2 rounded"
+          />
 
           {/* IMPORTE */}
           <input
