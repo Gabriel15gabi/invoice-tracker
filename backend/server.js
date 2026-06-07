@@ -1,128 +1,139 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
+const fs = require("fs");
+const Database = require("better-sqlite3");
 
 const app = express();
-
-// Middlewares
 app.use(cors());
 app.use(express.json());
 
-/*
-BASE DE DATOS EN MEMORIA
-*/
+/* ─────────────────────────────────────────────
+   BASE DE DATOS (SQLite — los datos persisten)
+   ───────────────────────────────────────────── */
+const dataDir = path.join(__dirname, "data");
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
-let clients = [
-  { id: 1, nombre: "Pepe" },
-  { id: 2, nombre: "Chandra" },
-  { id: 3, nombre: "Maria" },
-  { id: 4, nombre: "Paco" },
-];
+const db = new Database(path.join(dataDir, "invoices.db"));
+db.pragma("journal_mode = WAL");
 
-let invoices = [
-  {
-    id: 1,
-    clientId: 1,
-    amount: 1500,
-    status: "Pendiente",
-    date: "2026-05-05",
-  },
-  {
-    id: 2,
-    clientId: 2,
-    amount: 2500,
-    status: "Pendiente",
-    date: "2026-05-06",
-  },
-  {
-    id: 3,
-    clientId: 3,
-    amount: 1200,
-    status: "Pagada",
-    date: "2026-05-07",
-  },
-  {
-    id: 4,
-    clientId: 4,
-    amount: 1500,
-    status: "Pendiente",
-    date: "2026-05-05",
-  },
-];
-
-/*
-========================
-CLIENTS
-========================
-*/
-
-// GET clientes
-app.get("/clients", (req, res) => {
-  res.json(clients);
-});
-
-// POST cliente
-app.post("/clients", (req, res) => {
-  const newClient = {
-    ...req.body,
-    id: Date.now(),
-  };
-
-  clients.push(newClient);
-  res.json(newClient);
-});
-
-// DELETE cliente
-app.delete("/clients/:id", (req, res) => {
-  const id = Number(req.params.id);
-
-  clients = clients.filter((c) => c.id !== id);
-
-  res.json({ success: true });
-});
-
-/*
-========================
-INVOICES
-========================
-*/
-
-// GET facturas
-app.get("/invoices", (req, res) => {
-  res.json(invoices);
-});
-
-// POST factura
-app.post("/invoices", (req, res) => {
-  const newInvoice = {
-    ...req.body,
-    id: Date.now(),
-  };
-
-  invoices.push(newInvoice);
-  res.json(newInvoice);
-});
-
-// PUT factura
-app.put("/invoices/:id", (req, res) => {
-  const id = Number(req.params.id);
-
-  invoices = invoices.map((inv) =>
-    inv.id === id ? { ...inv, ...req.body } : inv
+db.exec(`
+  CREATE TABLE IF NOT EXISTS clients (
+    id     INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre TEXT NOT NULL
   );
 
-  res.json(invoices);
+  CREATE TABLE IF NOT EXISTS invoices (
+    id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    clientId INTEGER NOT NULL,
+    amount   REAL NOT NULL,
+    status   TEXT NOT NULL DEFAULT 'Pendiente',
+    date     TEXT NOT NULL
+  );
+`);
+
+// Datos de ejemplo (solo la primera vez, si la BD está vacía)
+if (db.prepare("SELECT COUNT(*) AS n FROM clients").get().n === 0) {
+  const insClient = db.prepare("INSERT INTO clients (id, nombre) VALUES (?, ?)");
+  [
+    [1, "Pepe"],
+    [2, "Chandra"],
+    [3, "Maria"],
+    [4, "Paco"],
+  ].forEach((c) => insClient.run(...c));
+
+  const insInvoice = db.prepare(
+    "INSERT INTO invoices (id, clientId, amount, status, date) VALUES (?, ?, ?, ?, ?)"
+  );
+  [
+    [1, 1, 1500, "Pendiente", "2026-05-05"],
+    [2, 2, 2500, "Pendiente", "2026-05-06"],
+    [3, 3, 1200, "Pagada", "2026-05-07"],
+    [4, 4, 1500, "Pendiente", "2026-05-05"],
+  ].forEach((i) => insInvoice.run(...i));
+}
+
+/* ─────────────────────────────────────────────
+   CLIENTS
+   ───────────────────────────────────────────── */
+app.get("/clients", (req, res) => {
+  res.json(db.prepare("SELECT * FROM clients ORDER BY id").all());
 });
 
-// DELETE factura
-app.delete("/invoices/:id", (req, res) => {
-  const id = Number(req.params.id);
+app.post("/clients", (req, res) => {
+  const nombre = (req.body?.nombre || "").trim();
+  if (!nombre) return res.status(400).json({ error: "El nombre es obligatorio" });
 
-  invoices = invoices.filter((inv) => inv.id !== id);
+  const info = db.prepare("INSERT INTO clients (nombre) VALUES (?)").run(nombre);
+  res.json(db.prepare("SELECT * FROM clients WHERE id = ?").get(info.lastInsertRowid));
+});
 
+app.delete("/clients/:id", (req, res) => {
+  db.prepare("DELETE FROM clients WHERE id = ?").run(Number(req.params.id));
   res.json({ success: true });
 });
 
-// Servidor
+/* ─────────────────────────────────────────────
+   INVOICES
+   ───────────────────────────────────────────── */
+app.get("/invoices", (req, res) => {
+  res.json(db.prepare("SELECT * FROM invoices ORDER BY id").all());
+});
+
+app.post("/invoices", (req, res) => {
+  const { clientId, amount, status, date } = req.body || {};
+  if (!clientId || amount == null || !date) {
+    return res.status(400).json({ error: "Faltan datos de la factura" });
+  }
+
+  const info = db
+    .prepare(
+      "INSERT INTO invoices (clientId, amount, status, date) VALUES (?, ?, ?, ?)"
+    )
+    .run(Number(clientId), Number(amount), status || "Pendiente", date);
+
+  res.json(db.prepare("SELECT * FROM invoices WHERE id = ?").get(info.lastInsertRowid));
+});
+
+app.put("/invoices/:id", (req, res) => {
+  const id = Number(req.params.id);
+  const current = db.prepare("SELECT * FROM invoices WHERE id = ?").get(id);
+  if (!current) return res.status(404).json({ error: "Factura no encontrada" });
+
+  const merged = { ...current, ...req.body };
+  db.prepare(
+    "UPDATE invoices SET clientId = ?, amount = ?, status = ?, date = ? WHERE id = ?"
+  ).run(Number(merged.clientId), Number(merged.amount), merged.status, merged.date, id);
+
+  // Mantenemos el contrato original: devolvemos la lista completa de facturas.
+  res.json(db.prepare("SELECT * FROM invoices ORDER BY id").all());
+});
+
+app.delete("/invoices/:id", (req, res) => {
+  db.prepare("DELETE FROM invoices WHERE id = ?").run(Number(req.params.id));
+  res.json({ success: true });
+});
+
+/* ─────────────────────────────────────────────
+   STATS (resumen calculado en el servidor)
+   ───────────────────────────────────────────── */
+app.get("/stats", (req, res) => {
+  const totalPaid = db
+    .prepare("SELECT COALESCE(SUM(amount), 0) AS v FROM invoices WHERE status = 'Pagada'")
+    .get().v;
+  const totalPending = db
+    .prepare("SELECT COALESCE(SUM(amount), 0) AS v FROM invoices WHERE status = 'Pendiente'")
+    .get().v;
+  const count = db.prepare("SELECT COUNT(*) AS n FROM invoices").get().n;
+  const byStatus = db
+    .prepare(
+      "SELECT status, COUNT(*) AS count, COALESCE(SUM(amount), 0) AS total FROM invoices GROUP BY status"
+    )
+    .all();
+
+  res.json({ totalPaid, totalPending, count, byStatus });
+});
+
 app.listen(3001, () => {
   console.log("Servidor en http://localhost:3001");
 });

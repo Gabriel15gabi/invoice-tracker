@@ -6,6 +6,12 @@ dist/
 dist-ssr/
 build/
 
+# Base de datos local (SQLite)
+backend/data/
+*.db
+*.db-shm
+*.db-wal
+
 # Logs
 *.log
 npm-debug.log*

@@ -1,5 +1,6 @@
 import InvoiceModal from "../components/InvoiceModal";
 import IncomeChart from "../components/IncomeChart";
+import StatusChart from "../components/StatusChart";
 import InvoiceDrawer from "../components/InvoiceDrawer";
 import { useState, useEffect } from "react";
 
@@ -133,7 +134,7 @@ const Dashboard = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
         <div className="bg-white p-6 rounded-xl shadow">
           <p className="text-gray-500">Ingresos</p>
           <h2 className="text-2xl font-bold">
@@ -157,18 +158,21 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <IncomeChart invoices={invoices} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <IncomeChart invoices={invoices} />
+        <StatusChart invoices={invoices} />
+      </div>
 
-      <div className="flex justify-between items-center mb-4 mt-8">
+      <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center mb-4 mt-8">
         <input
           type="text"
           placeholder="Buscar cliente..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border p-2 rounded w-1/3"
+          className="border p-2 rounded w-full sm:w-1/3"
         />
 
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4">
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
@@ -204,7 +208,8 @@ const Dashboard = () => {
           Últimas facturas
         </h2>
 
-        <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[560px] text-left text-sm">
           <thead className="text-gray-400 uppercase text-xs">
             <tr className="border-b">
               <th className="py-2">Cliente</th>
@@ -279,6 +284,7 @@ const Dashboard = () => {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       <InvoiceModal

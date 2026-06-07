@@ -10,7 +10,7 @@ sigo puliendo los gráficos y quiero añadir persistencia real y login.
 ## Stack
 
 - **Frontend:** React + Vite, React Router, Tailwind CSS y Recharts para los gráficos.
-- **Backend:** Node.js + Express (API REST).
+- **Backend:** Node.js + Express con base de datos SQLite (API REST).
 
 ## Cómo arrancarlo
 
@@ -48,9 +48,10 @@ El backend expone una API REST sencilla:
 | POST   | `/invoices`     | Crear factura         |
 | PUT    | `/invoices/:id` | Editar factura        |
 | DELETE | `/invoices/:id` | Borrar factura        |
+| GET    | `/stats`        | Resumen: totales y pagadas vs pendientes |
 
-De momento los datos se guardan en memoria, así que se reinician cada vez que
-paras el servidor.
+Los datos se guardan en una base de datos SQLite local, así que persisten entre
+reinicios del servidor.
 
 ## Estructura
 
@@ -62,6 +63,6 @@ proyecto-fullstack/
 
 ## Pendiente
 
-- Persistencia real con base de datos (ahora es memoria).
-- Más gráficos y filtros en el dashboard.
 - Autenticación de usuarios.
+- Exportar facturas a PDF.
+- Filtros por rango de fechas en el dashboard.

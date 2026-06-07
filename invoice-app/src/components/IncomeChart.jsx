@@ -33,7 +33,7 @@ const data = Object.values(grouped).sort(
 );
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow mb-8">
+    <div className="bg-white p-6 rounded-xl shadow">
       <h2 className="text-lg font-semibold mb-4">
         Evolución de ingresos
       </h2>
