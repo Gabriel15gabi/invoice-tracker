@@ -1,5 +1,40 @@
+import { jsPDF } from "jspdf";
+
 const InvoiceDrawer = ({ invoice, onClose, clientName }) => {
   if (!invoice) return null;
+
+  function downloadPDF() {
+    const doc = new jsPDF();
+
+    doc.setFontSize(22);
+    doc.text("FACTURA", 20, 25);
+
+    doc.setDrawColor(200);
+    doc.line(20, 30, 190, 30);
+
+    doc.setFontSize(11);
+    doc.text(`Nº de factura: ${invoice.id}`, 20, 45);
+    doc.text(`Cliente: ${clientName}`, 20, 55);
+    doc.text(
+      `Fecha: ${new Date(invoice.date).toLocaleDateString("es-ES")}`,
+      20,
+      65
+    );
+    doc.text(`Estado: ${invoice.status}`, 20, 75);
+
+    doc.setFontSize(16);
+    doc.text(
+      `Importe: ${invoice.amount.toLocaleString("es-ES")} EUR`,
+      20,
+      95
+    );
+
+    doc.setFontSize(9);
+    doc.setTextColor(150);
+    doc.text("Generado con Invoice Tracker", 20, 285);
+
+    doc.save(`factura-${invoice.id}.pdf`);
+  }
 
   return (
     <div
@@ -56,16 +91,15 @@ const InvoiceDrawer = ({ invoice, onClose, clientName }) => {
 
         {/* ACCIONES */}
         <div className="space-y-2">
-          <button className="w-full bg-blue-600 text-white py-2 rounded-md text-sm hover:bg-blue-700 transition">
-            Llamar cliente
+          <button
+            onClick={downloadPDF}
+            className="w-full bg-blue-600 text-white py-2 rounded-md text-sm hover:bg-blue-700 transition"
+          >
+            Descargar PDF
           </button>
 
           <button className="w-full bg-gray-100 py-2 rounded-md text-sm hover:bg-gray-200 transition">
             Enviar email
-          </button>
-
-          <button className="w-full bg-green-600 text-white py-2 rounded-md text-sm hover:bg-green-700 transition">
-            Marcar como pagada
           </button>
         </div>
       </div>

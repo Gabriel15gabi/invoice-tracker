@@ -2,6 +2,7 @@ import InvoiceModal from "../components/InvoiceModal";
 import IncomeChart from "../components/IncomeChart";
 import StatusChart from "../components/StatusChart";
 import InvoiceDrawer from "../components/InvoiceDrawer";
+import { api } from "../api";
 import { useState, useEffect } from "react";
 
 const Dashboard = () => {
@@ -15,6 +16,8 @@ const Dashboard = () => {
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Todas");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [editingInvoice, setEditingInvoice] = useState(null);
 
   const clientsMap = Object.fromEntries(
@@ -22,11 +25,11 @@ const Dashboard = () => {
   );
 
   useEffect(() => {
-    fetch("http://localhost:3001/invoices")
+    api("/invoices")
       .then((res) => res.json())
       .then((data) => setInvoices(data));
 
-    fetch("http://localhost:3001/clients")
+    api("/clients")
       .then((res) => res.json())
       .then((data) => setClients(data));
   }, []);
@@ -35,7 +38,7 @@ const Dashboard = () => {
     clientsMap[id] || "Cliente desconocido";
 
   const addInvoice = (newInvoice) => {
-    fetch("http://localhost:3001/invoices", {
+    api("/invoices", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -51,7 +54,7 @@ const Dashboard = () => {
   const deleteInvoice = (id) => {
     if (!window.confirm("¿Seguro que quieres eliminar esta factura?")) return;
 
-    fetch(`http://localhost:3001/invoices/${id}`, {
+    api(`/invoices/${id}`, {
       method: "DELETE",
     }).then(() => {
       setInvoices((prev) => prev.filter((inv) => inv.id !== id));
@@ -64,27 +67,27 @@ const Dashboard = () => {
       status: invoice.status === "Pagada" ? "Pendiente" : "Pagada",
     };
 
-    fetch(`http://localhost:3001/invoices/${invoice.id}`, {
+    api(`/invoices/${invoice.id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(updated),
     })
-      .then(() => fetch("http://localhost:3001/invoices"))
+      .then(() => api("/invoices"))
       .then((res) => res.json())
       .then((data) => setInvoices(data));
   };
 
   const updateInvoice = (updatedInvoice) => {
-    fetch(`http://localhost:3001/invoices/${updatedInvoice.id}`, {
+    api(`/invoices/${updatedInvoice.id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(updatedInvoice),
     })
-      .then(() => fetch("http://localhost:3001/invoices"))
+      .then(() => api("/invoices"))
       .then((res) => res.json())
       .then((data) => setInvoices(data));
   };
@@ -94,7 +97,9 @@ const Dashboard = () => {
 
     return (
       clientName.includes(search.toLowerCase()) &&
-      (filter === "Todas" || invoice.status === filter)
+      (filter === "Todas" || invoice.status === filter) &&
+      (!from || invoice.date >= from) &&
+      (!to || invoice.date <= to)
     );
   });
 
@@ -173,6 +178,23 @@ const Dashboard = () => {
         />
 
         <div className="flex flex-wrap gap-4">
+          <input
+            type="date"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            className="border p-2 rounded"
+            title="Desde"
+            aria-label="Desde"
+          />
+          <input
+            type="date"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            className="border p-2 rounded"
+            title="Hasta"
+            aria-label="Hasta"
+          />
+
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}

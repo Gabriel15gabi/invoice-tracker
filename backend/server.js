@@ -3,10 +3,14 @@ const cors = require("cors");
 const path = require("path");
 const fs = require("fs");
 const Database = require("better-sqlite3");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const JWT_SECRET = process.env.JWT_SECRET || "invoice_tracker_dev_secret_cambia_esto";
 
 /* ─────────────────────────────────────────────
    BASE DE DATOS (SQLite — los datos persisten)
@@ -30,6 +34,12 @@ db.exec(`
     status   TEXT NOT NULL DEFAULT 'Pendiente',
     date     TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS users (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    username      TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL
+  );
 `);
 
 // Datos de ejemplo (solo la primera vez, si la BD está vacía)
@@ -52,6 +62,56 @@ if (db.prepare("SELECT COUNT(*) AS n FROM clients").get().n === 0) {
     [4, 4, 1500, "Pendiente", "2026-05-05"],
   ].forEach((i) => insInvoice.run(...i));
 }
+
+/* ─────────────────────────────────────────────
+   AUTENTICACIÓN (bcrypt + JWT)
+   ───────────────────────────────────────────── */
+const signToken = (user) =>
+  jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, {
+    expiresIn: "7d",
+  });
+
+app.post("/auth/register", (req, res) => {
+  const username = (req.body?.username || "").trim();
+  const password = req.body?.password || "";
+  if (username.length < 3 || password.length < 4) {
+    return res
+      .status(400)
+      .json({ error: "Usuario (mín. 3) y contraseña (mín. 4) requeridos" });
+  }
+  if (db.prepare("SELECT id FROM users WHERE username = ?").get(username)) {
+    return res.status(409).json({ error: "Ese usuario ya existe" });
+  }
+  const hash = bcrypt.hashSync(password, 10);
+  const info = db
+    .prepare("INSERT INTO users (username, password_hash) VALUES (?, ?)")
+    .run(username, hash);
+  res.json({ token: signToken({ id: info.lastInsertRowid, username }), username });
+});
+
+app.post("/auth/login", (req, res) => {
+  const username = (req.body?.username || "").trim();
+  const password = req.body?.password || "";
+  const user = db.prepare("SELECT * FROM users WHERE username = ?").get(username);
+  if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+    return res.status(401).json({ error: "Usuario o contraseña incorrectos" });
+  }
+  res.json({ token: signToken(user), username: user.username });
+});
+
+// A partir de aquí, todas las rutas requieren sesión.
+function authRequired(req, res, next) {
+  const header = req.headers.authorization || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+  if (!token) return res.status(401).json({ error: "No autenticado" });
+  try {
+    req.user = jwt.verify(token, JWT_SECRET);
+    next();
+  } catch {
+    res.status(401).json({ error: "Sesión expirada o inválida" });
+  }
+}
+app.use(authRequired);
 
 /* ─────────────────────────────────────────────
    CLIENTS

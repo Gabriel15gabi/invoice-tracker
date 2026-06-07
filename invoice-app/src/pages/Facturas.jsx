@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import InvoiceModal from "../components/InvoiceModal";
+import { api } from "../api";
 
 const Facturas = () => {
   const [invoices, setInvoices] = useState([]);
@@ -8,7 +9,7 @@ const Facturas = () => {
 
   // 📥 Cargar facturas
   useEffect(() => {
-    fetch("http://localhost:3001/invoices")
+    api("/invoices")
       .then((res) => res.json())
       .then((data) => setInvoices(data))
       .catch((err) => console.error(err));
@@ -16,7 +17,7 @@ const Facturas = () => {
 
   // ➕ Crear factura
   const addInvoice = (newInvoice) => {
-    fetch("http://localhost:3001/invoices", {
+    api("/invoices", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -33,7 +34,7 @@ const Facturas = () => {
   const deleteInvoice = (id) => {
     if (!window.confirm("¿Eliminar factura?")) return;
 
-    fetch(`http://localhost:3001/invoices/${id}`, {
+    api(`/invoices/${id}`, {
       method: "DELETE",
     }).then(() => {
       setInvoices((prev) => prev.filter((i) => i.id !== id));
@@ -47,7 +48,7 @@ const Facturas = () => {
       status: invoice.status === "Pagada" ? "Pendiente" : "Pagada",
     };
 
-    fetch(`http://localhost:3001/invoices/${invoice.id}`, {
+    api(`/invoices/${invoice.id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -64,7 +65,7 @@ const Facturas = () => {
 
   // ✏️ Editar factura
   const updateInvoice = (updatedInvoice) => {
-    fetch(`http://localhost:3001/invoices/${updatedInvoice.id}`, {
+    api(`/invoices/${updatedInvoice.id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",

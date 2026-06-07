@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { api } from "../api";
 
 const InvoiceModal = ({
   isOpen,
@@ -13,7 +14,7 @@ const InvoiceModal = ({
 
   // Cargar clientes desde backend
   useEffect(() => {
-    fetch("http://localhost:3001/clients")
+    api("/clients")
       .then((res) => res.json())
       .then((data) => setClients(data))
       .catch((err) => console.error(err));

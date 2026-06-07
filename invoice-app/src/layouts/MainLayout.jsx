@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { logout, getUsername } from "../api";
 
 const MainLayout = ({ children }) => {
   const location = useLocation();
@@ -34,9 +35,19 @@ const MainLayout = ({ children }) => {
           </Link>
         </nav>
 
-        {/* FOOTER (solo en escritorio) */}
-        <div className="mt-auto hidden md:block text-sm text-gray-400">
-          <p>v1.0</p>
+        {/* USUARIO + CERRAR SESIÓN */}
+        <div className="mt-auto pt-4">
+          {getUsername() && (
+            <p className="mb-2 text-sm text-gray-400">
+              Hola, <span className="text-white">{getUsername()}</span>
+            </p>
+          )}
+          <button
+            onClick={logout}
+            className="text-sm text-gray-300 underline hover:text-white"
+          >
+            Cerrar sesión
+          </button>
         </div>
       </aside>
 
