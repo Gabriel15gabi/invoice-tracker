@@ -1,0 +1,51 @@
+{
+  "clients": [
+    {
+      "id": 1,
+      "nombre": "Pepe"
+    },
+    {
+      "id": 2,
+      "nombre": "Chandra"
+    },
+    {
+      "id": 3,
+      "nombre": "Maria"
+    },
+    {
+      "id": 4,
+      "nombre": "Paco"
+    }
+  ],
+
+  "invoices": [
+    {
+      "id": 1,
+      "clientId": 1,
+      "amount": 1500,
+      "status": "Pendiente",
+      "date": "2026-05-05"
+    },
+    {
+      "id": 2,
+      "clientId": 2,
+      "amount": 2500,
+      "status": "Pendiente",
+      "date": "2026-05-06"
+    },
+    {
+      "id": 3,
+      "clientId": 3,
+      "amount": 1200,
+      "status": "Pagada",
+      "date": "2026-05-07"
+    },
+    {
+      "id": 1777977717495,
+      "clientId": 4,
+      "amount": 1500,
+      "status": "Pendiente",
+      "date": "2026-05-05"
+    }
+  ]
+}
