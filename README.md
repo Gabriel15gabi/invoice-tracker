@@ -14,26 +14,32 @@ sigo puliendo los gráficos y quiero añadir persistencia real y login.
 
 ## Cómo arrancarlo
 
-Necesitas Node 18 o superior. Son dos procesos: el backend (puerto 3001) y el
-frontend de Vite.
+Necesitas Node 18 o superior.
 
-Backend:
+La primera vez, instala las dependencias de todo el proyecto:
 
 ```bash
-cd backend
-npm install
-node server.js
+npm run install:all
 ```
 
-Frontend, en otra terminal:
+Después, arranca backend y frontend a la vez con un solo comando desde la raíz:
 
 ```bash
-cd invoice-app
-npm install
 npm run dev
 ```
 
-Abre la URL que te muestra Vite (normalmente http://localhost:5173).
+Eso levanta el backend en el puerto 3001 y el frontend de Vite. Abre la URL que
+te muestra Vite (normalmente http://localhost:5173).
+
+Si prefieres arrancarlos por separado, en dos terminales:
+
+```bash
+# Terminal 1 — backend
+cd backend && node server.js
+
+# Terminal 2 — frontend
+cd invoice-app && npm run dev
+```
 
 ## API
 
